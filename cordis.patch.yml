@@ -1,0 +1,5 @@
+# dsh-keep-awake bundle patch: one host plugin row.
+# The web client half is wired from the package's `dsh.client` manifest.
+- insert:
+    - id: dsh-keep-awake
+      name: dsh-keep-awake
