@@ -29,7 +29,7 @@
     "sleep"
   ],
   "dependencies": {
-    "zod": "^4.4.3"
+    "@deepseek-ai/schemastery": "^3.18.1"
   },
   "dsh": {
     "bundle": {
