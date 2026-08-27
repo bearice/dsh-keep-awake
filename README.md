@@ -6,11 +6,17 @@
 
 任意 agent / subagent / 后台任务运行时阻止系统休眠 · 全部空闲后按宽限期自动释放 · 手动保持唤醒 · 可选阻止屏幕关闭 · Windows / macOS / Linux · 设置持久化 · 多语言 Web 设置页
 
-[![version](https://img.shields.io/badge/version-0.1.0-4176E6)](https://github.com/bearice/dsh-keep-awake)
+[![version](https://img.shields.io/badge/version-0.2.0-4176E6)](https://github.com/bearice/dsh-keep-awake)
 [![license](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![dsh](https://img.shields.io/badge/DeepSeek%20Harness-dsh--plugin-4176E6)](https://github.com/deepseek-ai/deepseek-harness)
 
 [English](README.en.md) | **中文**
+
+</div>
+
+<div align="center">
+
+![设置页截图](screenshot.png)
 
 </div>
 

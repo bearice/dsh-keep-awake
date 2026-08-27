@@ -6,11 +6,17 @@
 
 Blocks OS sleep while any agent / subagent / background job runs · auto-release after a configurable grace period once idle · manual hold · optional display-on · Windows / macOS / Linux · persisted settings · multilingual web settings page
 
-[![version](https://img.shields.io/badge/version-0.1.0-4176E6)](https://github.com/bearice/dsh-keep-awake)
+[![version](https://img.shields.io/badge/version-0.2.0-4176E6)](https://github.com/bearice/dsh-keep-awake)
 [![license](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![dsh](https://img.shields.io/badge/DeepSeek%20Harness-dsh--plugin-4176E6)](https://github.com/deepseek-ai/deepseek-harness)
 
 **English** | [中文](README.md)
+
+</div>
+
+<div align="center">
+
+![Settings page](screenshot.png)
 
 </div>
 
