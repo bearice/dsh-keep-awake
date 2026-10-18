@@ -1,9 +1,17 @@
 {
   "name": "dsh-keep-awake",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Prevent the OS from sleeping while any DSH agent, subagent, or background job runs (SetThreadExecutionState / caffeinate / systemd-inhibit), with a web settings page",
   "type": "module",
   "main": "./lib/index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bearice/dsh-keep-awake.git"
+  },
+  "homepage": "https://github.com/bearice/dsh-keep-awake#readme",
+  "bugs": {
+    "url": "https://github.com/bearice/dsh-keep-awake/issues"
+  },
   "exports": {
     ".": "./lib/index.js",
     "./client": "./lib/client.js",
