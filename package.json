@@ -1,6 +1,6 @@
 {
   "name": "dsh-keep-awake",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Prevent the OS from sleeping while any DSH agent, subagent, or background job runs (SetThreadExecutionState / caffeinate / systemd-inhibit), with a web settings page",
   "type": "module",
   "main": "./lib/index.js",
@@ -18,7 +18,8 @@
   ],
   "license": "MIT",
   "engines": {
-    "node": ">=22.0.0"
+    "node": ">=22.0.0",
+    "dsh": ">=0.2.0-rc.1 <0.3.0-0"
   },
   "keywords": [
     "deepseek-harness",
@@ -29,7 +30,7 @@
     "sleep"
   ],
   "peerDependencies": {
-    "@deepseek-ai/schemastery": "^3.18.1"
+    "@deepseek-ai/schemastery": "~3.18.5"
   },
   "dsh": {
     "bundle": {
@@ -37,6 +38,12 @@
     },
     "client": {
       "platform": "web"
+    },
+    "compatibility": {
+      "dsh": ">=0.2.0-rc.1 <0.3.0-0",
+      "dshReleases": {
+        "0.2.1-rc.2": "compatible"
+      }
     }
   },
   "dshhub": {
@@ -52,7 +59,7 @@
       "web"
     ],
     "compatibility": {
-      "dsh": ">=0.1.0-rc.5",
+      "dsh": ">=0.2.0-rc.1 <0.3.0-0",
       "node": ">=22"
     },
     "permissions": {}

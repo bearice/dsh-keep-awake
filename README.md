@@ -6,7 +6,7 @@
 
 任意 agent / subagent / 后台任务运行时阻止系统休眠 · 全部空闲后按宽限期自动释放 · 手动保持唤醒 · 可选阻止屏幕关闭 · Windows / macOS / Linux · 设置持久化 · 多语言 Web 设置页
 
-[![version](https://img.shields.io/badge/version-0.2.0-4176E6)](https://github.com/bearice/dsh-keep-awake)
+[![version](https://img.shields.io/badge/version-0.3.0-4176E6)](https://github.com/bearice/dsh-keep-awake)
 [![license](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![dsh](https://img.shields.io/badge/DeepSeek%20Harness-dsh--plugin-4176E6)](https://github.com/deepseek-ai/deepseek-harness)
 
@@ -36,7 +36,7 @@
 每 5 秒轮询 + 事件即时重扫（`agent/status`、`subagent/start|end`、job 集变更）：
 
 - **运行中的 agent**：`agents.list()` 中 `status === 'running'` 的 agent（覆盖主 agent、subagent、workflow 子代理）
-- **后台任务**：`jobs.list()` / `jobs.list(agent)` 中 `running`/`stopping` 的任务（覆盖 `run_in_background` 命令与后台 subagent 任务）
+- **后台任务**：`jobs.list()`（无归属任务）加上对每个活跃会话的 `jobs.list(sessionId)`，统计 `running`/`stopping` 的任务（覆盖 `run_in_background` 命令与后台 subagent 任务）；任务事件来自 `jobs.events.subscribe({ owners: 'all' }, ...)`
 
 检测到活动时通过 `subprocess` 服务启动一个平台辅助进程（树级终止，进程退出即释放休眠标志）：
 
@@ -48,7 +48,7 @@
 
 ## 设置
 
-持久化在 profile 的 `settings.yaml`（namespace `keep-awake`）：
+设置页的改动通过 DSH 的 `settings` 服务写入 profile 的插件补丁（本插件自己的 Loader 行），重启后保留：
 
 | 键 | 默认 | 说明 |
 |---|---|---|
@@ -57,14 +57,26 @@
 | `preventDisplaySleep` | `false` | 同时阻止屏幕关闭 |
 | `manualHold` | `false` | 手动保持唤醒 |
 
+这些字段在 `Config` 中都标记为 volatile，因此改动即时生效、不会重挂插件；每次修改都带修订号做乐观并发，两个设置页同时改时后改的一方会收到 409 并自动刷新为最新值。宿主没有 `settings` 服务时（例如老版本 DSH）设置页仍可操作，但改动只在本次运行内生效，界面会显示相应提示。
+
+## 兼容性
+
+| 项目 | 要求 |
+|---|---|
+| DSH | `>=0.2.0-rc.1 <0.3.0-0`（`engines.dsh`；开发验证于 `0.2.1-rc.2`） |
+| Node | `>=22` |
+| `@deepseek-ai/schemastery` | `~3.18.5`（volatile 字段需要 3.18.5 起的 `.volatile()`，与宿主捆绑版本一致） |
+
+`dsh.compatibility.dshReleases` 目前只声明了实际验证过的 `0.2.1-rc.2`。
+
 ## 多语言
 
-界面使用框架 `locale` 服务（namespace `keep-awake`，zh/en 字典）：未显式设置语言时自动跟随浏览器/系统语言；在 DSH 语言设置中切换后即时生效（设置页正文与侧边栏标签均跟随）。
+界面使用框架 `locale` 服务（本插件的语言 namespace 为 `keep-awake`，zh/en 字典）：未显式设置语言时自动跟随浏览器/系统语言；在 DSH 语言设置中切换后即时生效（设置页正文与侧边栏标签均跟随）。
 
 ## HTTP 路由（loopback）
 
-- `GET /dsh-keep-awake/state` — 当前状态（活动计数、助手进程、配置）
-- `PUT /dsh-keep-awake/config` — 更新配置，body `{ "section": {...} }`
+- `GET /dsh-keep-awake/state` — 当前状态（活动计数、助手进程、配置，含 `revision` 与 `persistent`）
+- `PUT /dsh-keep-awake/config` — 更新配置，body `{ "section": {...}, "revision": <可选> }`；修订号过期返回 `409` 并附最新状态、未知键返回 `400`
 
 ## 安装
 

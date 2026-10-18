@@ -6,7 +6,7 @@
 
 Blocks OS sleep while any agent / subagent / background job runs · auto-release after a configurable grace period once idle · manual hold · optional display-on · Windows / macOS / Linux · persisted settings · multilingual web settings page
 
-[![version](https://img.shields.io/badge/version-0.2.0-4176E6)](https://github.com/bearice/dsh-keep-awake)
+[![version](https://img.shields.io/badge/version-0.3.0-4176E6)](https://github.com/bearice/dsh-keep-awake)
 [![license](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![dsh](https://img.shields.io/badge/DeepSeek%20Harness-dsh--plugin-4176E6)](https://github.com/deepseek-ai/deepseek-harness)
 
@@ -36,7 +36,7 @@ Blocks OS sleep while any agent / subagent / background job runs · auto-release
 Polls every 5 seconds, with instant re-scan on events (`agent/status`, `subagent/start|end`, job set changes):
 
 - **Running agents**: agents with `status === 'running'` in `agents.list()` (covers the main agent, subagents, and workflow children)
-- **Background jobs**: `running`/`stopping` jobs in `jobs.list()` / `jobs.list(agent)` (covers `run_in_background` commands and background subagent tasks)
+- **Background jobs**: `running`/`stopping` jobs from `jobs.list()` (unowned) plus `jobs.list(sessionId)` for every live session (covers `run_in_background` commands and background subagent tasks); job events come from `jobs.events.subscribe({ owners: 'all' }, ...)`
 
 When activity is detected, a platform helper process is started via the `subprocess` service (tree-level termination — the sleep flags release as soon as the process exits):
 
@@ -48,7 +48,7 @@ When activity is detected, a platform helper process is started via the `subproc
 
 ## Settings
 
-Persisted in the profile's `settings.yaml` (namespace `keep-awake`):
+Changes made on the settings page are written through DSH's `settings` service into the profile's plugin patch (this plugin's own Loader row) and survive a restart:
 
 | Key | Default | Description |
 |---|---|---|
@@ -57,14 +57,26 @@ Persisted in the profile's `settings.yaml` (namespace `keep-awake`):
 | `preventDisplaySleep` | `false` | Also keep the display on |
 | `manualHold` | `false` | Manual hold |
 
+All of these fields are marked volatile in `Config`, so a change applies live without remounting the plugin. Every write carries a revision for optimistic concurrency: if two settings pages write at once, the later one gets a 409 and reloads the live values. On a host without a `settings` service (older DSH) the page still works, but changes last only until DSH restarts and the UI says so.
+
+## Compatibility
+
+| Item | Requirement |
+|---|---|
+| DSH | `>=0.2.0-rc.1 <0.3.0-0` (`engines.dsh`; developed and verified against `0.2.1-rc.2`) |
+| Node | `>=22` |
+| `@deepseek-ai/schemastery` | `~3.18.5` (volatile fields need `.volatile()`, added in 3.18.5; same range the host bundles) |
+
+`dsh.compatibility.dshReleases` currently only declares the release actually verified: `0.2.1-rc.2`.
+
 ## Localization
 
-The UI uses the framework `locale` service (namespace `keep-awake`, zh/en dictionaries): when no language is explicitly set, the browser/system language is used; switching in DSH's language settings takes effect instantly (both the settings page body and the sidebar label follow).
+The UI uses the framework `locale` service (this plugin's locale namespace is `keep-awake`, zh/en dictionaries): when no language is explicitly set, the browser/system language is used; switching in DSH's language settings takes effect instantly (both the settings page body and the sidebar label follow).
 
 ## HTTP routes (loopback)
 
-- `GET /dsh-keep-awake/state` — current state (activity counts, helper process, config)
-- `PUT /dsh-keep-awake/config` — update config, body `{ "section": {...} }`
+- `GET /dsh-keep-awake/state` — current state (activity counts, helper process, config, plus `revision` and `persistent`)
+- `PUT /dsh-keep-awake/config` — update config, body `{ "section": {...}, "revision": <optional> }`; a stale revision returns `409` with the live state, an unknown key returns `400`
 
 ## Install
 
