@@ -1,7 +1,7 @@
 {
   "name": "dsh-keep-awake",
-  "version": "0.3.1",
-  "description": "Prevent the OS from sleeping while any DSH agent, subagent, or background job runs (SetThreadExecutionState / caffeinate / systemd-inhibit), with a web settings page",
+  "version": "0.4.0",
+  "description": "Prevent the OS from sleeping while any DSH agent, subagent, or background job runs (SetThreadExecutionState / caffeinate / systemd-inhibit), optionally while scheduled tasks are pending, with a web settings page",
   "type": "module",
   "main": "./lib/index.js",
   "repository": {
@@ -50,14 +50,15 @@
     "compatibility": {
       "dsh": ">=0.2.0-rc.1 <0.3.0-0",
       "dshReleases": {
-        "0.2.1-rc.2": "compatible"
+        "0.2.1-rc.2": "compatible",
+        "0.2.1-rc.4": "compatible"
       }
     }
   },
   "dshhub": {
     "schemaVersion": 1,
     "displayName": "Keep Awake 防休眠",
-    "summary": "任意 agent、subagent 或后台任务运行时阻止系统休眠（宽限期可配、可手动保持），Web 设置页实时监控。",
+    "summary": "任意 agent、subagent 或后台任务运行时阻止系统休眠（宽限期可配、可手动保持）；可选在存在待执行定时任务时保持唤醒。Web 设置页实时监控。",
     "categories": [
       "系统",
       "Web UI"
