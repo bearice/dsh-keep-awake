@@ -4,9 +4,9 @@
 
 **DeepSeek Harness 防休眠插件（界面跟随 DSH 全局语言）**
 
-任意 agent / subagent / 后台任务运行时阻止系统休眠 · 全部空闲后按宽限期自动释放 · 手动保持唤醒 · 可选阻止屏幕关闭 · Windows / macOS / Linux · 设置持久化 · 多语言 Web 设置页
+任意 agent / subagent / 后台任务运行时阻止系统休眠 · 全部空闲后按宽限期自动释放 · 手动保持唤醒 · 可选阻止屏幕关闭 · 可选：存在待执行定时任务时保持唤醒 · Windows / macOS / Linux · 设置持久化 · 多语言 Web 设置页
 
-[![version](https://img.shields.io/badge/version-0.3.1-4176E6)](https://github.com/bearice/dsh-keep-awake)
+[![version](https://img.shields.io/badge/version-0.4.0-4176E6)](https://github.com/bearice/dsh-keep-awake)
 [![license](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![dsh](https://img.shields.io/badge/DeepSeek%20Harness-dsh--plugin-4176E6)](https://github.com/deepseek-ai/deepseek-harness)
 
@@ -29,6 +29,7 @@
 | 宽限期 | 设置页可配 | 全部活动结束后 15s–5m（默认 60s）自动释放防休眠 |
 | 手动保持 | 设置页 | 无视活动状态强制保持唤醒，点击取消 |
 | 阻止屏幕关闭 | 设置页可选 | 默认只防系统休眠、允许熄屏；勾选后屏幕也保持 |
+| 定时任务保温 | 设置页可选（默认关闭） | 开启后只要存在待执行的定时任务就保持唤醒，保证到点能触发；任务清空后按宽限期释放 |
 | 多语言 | 全局 | 跟随 DSH 全局语言（zh/en），未显式设置时跟随浏览器/系统，切换即时生效（含侧边栏标签） |
 
 ## 工作原理
@@ -37,6 +38,7 @@
 
 - **运行中的 agent**：`agents.list()` 中 `status === 'running'` 的 agent（覆盖主 agent、subagent、workflow 子代理）
 - **后台任务**：`jobs.list()`（无归属任务）加上对每个活跃会话的 `jobs.list(sessionId)`，统计 `running`/`stopping` 的任务（覆盖 `run_in_background` 命令与后台 subagent 任务）；任务事件来自 `jobs.events.subscribe({ owners: 'all' }, ...)`
+- **定时任务（可选，默认关闭）**：开启 `scheduleHold` 后每轮重扫调用宿主的 `schedule` 服务读取 `catalog()`，统计 `status === 'active'` 的任务，存在则保持唤醒。`schedule/changed` 事件发在 schedule 服务自身的上下文、cordis 事件只向上冒泡，本插件订阅不到，因此该判定依赖 5 秒轮询——新建任务最迟一个轮询周期内进入保温，删除/暂停任务最迟一个周期后进入宽限释放
 
 检测到活动时通过 `subprocess` 服务启动一个平台辅助进程（树级终止，进程退出即释放休眠标志）：
 
@@ -56,6 +58,7 @@
 | `graceMs` | `60000` | 全部活动结束后的宽限期（15s–5m） |
 | `preventDisplaySleep` | `false` | 同时阻止屏幕关闭 |
 | `manualHold` | `false` | 手动保持唤醒 |
+| `scheduleHold` | `false` | 存在待执行定时任务时保持唤醒。开启后设置页会显示待执行任务数与最近一次预定时间；宿主没有 `schedule` 服务时此项无效并在设置页提示 |
 
 这些字段在 `Config` 中都标记为 volatile，因此改动即时生效、不会重挂插件；每次修改都带修订号做乐观并发，两个设置页同时改时后改的一方会收到 409 并自动刷新为最新值。宿主没有 `settings` 服务时（例如老版本 DSH）设置页仍可操作，但改动只在本次运行内生效，界面会显示相应提示。
 
@@ -63,11 +66,11 @@
 
 | 项目 | 要求 |
 |---|---|
-| DSH | `>=0.2.0-rc.1 <0.3.0-0`（`engines.dsh`；开发验证于 `0.2.1-rc.2`） |
+| DSH | `>=0.2.0-rc.1 <0.3.0-0`（`engines.dsh`；开发验证于 `0.2.1-rc.2`，`scheduleHold` 及全量回归验证于 `0.2.1-rc.4`） |
 | Node | `>=22` |
 | `@deepseek-ai/schemastery` | `~3.18.5`（volatile 字段需要 3.18.5 起的 `.volatile()`，与宿主捆绑版本一致） |
 
-`dsh.compatibility.dshReleases` 目前只声明了实际验证过的 `0.2.1-rc.2`。
+`dsh.compatibility.dshReleases` 声明实际验证过的 `0.2.1-rc.2` 与 `0.2.1-rc.4`。`scheduleHold` 依赖宿主的 `schedule` 服务（0.2 线捆绑自带）；宿主没有该服务时选项惰性降级为无操作，设置页会提示。
 
 ## 多语言
 
@@ -75,7 +78,7 @@
 
 ## HTTP 路由（loopback）
 
-- `GET /dsh-keep-awake/state` — 当前状态（活动计数、助手进程、配置，含 `revision` 与 `persistent`）
+- `GET /dsh-keep-awake/state` — 当前状态（活动计数、定时任务保温视图（`pendingSchedules`/`nextDueAt`/`scheduleService`）、助手进程、配置，含 `revision` 与 `persistent`）
 - `PUT /dsh-keep-awake/config` — 更新配置，body `{ "section": {...}, "revision": <可选> }`；修订号过期返回 `409` 并附最新状态、未知键返回 `400`
 
 ## 安装
